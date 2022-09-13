@@ -142,7 +142,7 @@ public class GradeBookController {
 	@PostMapping("/gradebook/add")
 	@Transactional
 	public void addAssignment(@RequestParam String name, @RequestParam Date dueDate, @RequestParam Course course_id) {
-		 
+		
 		Assignment assignment = new Assignment();
 		assignment.setName(name);
 		assignment.setDueDate(dueDate);
@@ -153,8 +153,8 @@ public class GradeBookController {
 	@PutMapping("/gradebook/change/{assignmentId}")
 	@Transactional
 	public void changeTitle(@PathVariable int assignmentId, @RequestParam String name) {
-		 
-		Assignment assignment = assignmentRepository.findById(assignmentId).orElse(null);
+		String email = "dwisneski@csumb.edu"; 
+		Assignment assignment = checkAssignment(assignmentId, email);
 
 		if (assignment!=null) {
 			assignment.setName(name);
@@ -168,8 +168,9 @@ public class GradeBookController {
 	@Transactional
 	public void deleteAssignment(@PathVariable int assignmentId) {
 		
-		Assignment assignment = assignmentRepository.findById(assignmentId).orElse(null);
-
+		String email = "dwisneski@csumb.edu"; 
+		Assignment assignment = checkAssignment(assignmentId, email);
+		
 		if (assignment!=null && assignment.getNeedsGrading() == 1) {
 			 assignmentRepository.delete(assignment);
 		} else { 
