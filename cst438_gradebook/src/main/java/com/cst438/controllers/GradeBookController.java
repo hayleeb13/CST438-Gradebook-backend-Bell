@@ -1,5 +1,6 @@
 package com.cst438.controllers;
 
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,11 +8,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -130,6 +137,44 @@ public class GradeBookController {
 		if (grade >= 70) return "C";
 		if (grade >= 60) return "D";
 		return "F";
+	}
+	
+	@PostMapping("/gradebook/add")
+	@Transactional
+	public void addAssignment(@RequestParam String name, @RequestParam Date dueDate, @RequestParam Course course_id) {
+		 
+		Assignment assignment = new Assignment();
+		assignment.setName(name);
+		assignment.setDueDate(dueDate);
+		assignment.setCourse(course_id);
+		assignmentRepository.save(assignment);
+	}
+	
+	@PutMapping("/gradebook/change/{assignmentId}")
+	@Transactional
+	public void changeTitle(@PathVariable int assignmentId, @RequestParam String name) {
+		 
+		Assignment assignment = assignmentRepository.findById(assignmentId).orElse(null);
+
+		if (assignment!=null) {
+			assignment.setName(name);
+			assignmentRepository.save(assignment);
+		} else { 
+			throw  new ResponseStatusException( HttpStatus.BAD_REQUEST, "Assignment Id invalid. " + assignmentId);
+		}
+	}
+	
+	@DeleteMapping("/gradebook/{assignmentId}")
+	@Transactional
+	public void deleteAssignment(@PathVariable int assignmentId) {
+		
+		Assignment assignment = assignmentRepository.findById(assignmentId).orElse(null);
+
+		if (assignment!=null && assignment.getNeedsGrading() == 1) {
+			 assignmentRepository.delete(assignment);
+		} else { 
+			throw  new ResponseStatusException( HttpStatus.BAD_REQUEST, "Assignment Id invalid. " + assignmentId);
+		}
 	}
 	
 	@PutMapping("/gradebook/{id}")
