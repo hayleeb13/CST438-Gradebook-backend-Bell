@@ -139,15 +139,15 @@ public class GradeBookController {
 		return "F";
 	}
 	
-	@PostMapping("/gradebook/add")
+	@PostMapping("/addassignment")
 	@Transactional
-	public void addAssignment(@RequestParam String name, @RequestParam Date dueDate, @RequestParam Course course_id) {
+	public void addAssignment(@RequestBody Assignment assignment) { 
 		
-		Assignment assignment = new Assignment();
-		assignment.setName(name);
-		assignment.setDueDate(dueDate);
-		assignment.setCourse(course_id);
-		assignmentRepository.save(assignment);
+		Assignment assign = new Assignment();
+		assign.setDueDate(assignment.getDueDate());
+		assign.setName(assignment.getName());
+		assign.setCourse(assignment.getCourse());
+		assignmentRepository.save(assign);
 	}
 	
 	@PutMapping("/gradebook/change/{assignmentId}")
