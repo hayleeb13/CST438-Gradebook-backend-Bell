@@ -139,7 +139,7 @@ public class GradeBookController {
 		return "F";
 	}
 	
-	@PostMapping("/addAssignment")
+	@PostMapping("/addassignment")
 	@Transactional
 	public void addAssignment(@RequestBody Assignment assignment) { 
 		
