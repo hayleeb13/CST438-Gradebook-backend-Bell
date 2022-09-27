@@ -1,6 +1,7 @@
 package com.cst438;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import static org.mockito.BDDMockito.given;
@@ -23,6 +25,7 @@ import com.cst438.controllers.GradeBookController;
 import com.cst438.domain.Assignment;
 import com.cst438.domain.AssignmentGrade;
 import com.cst438.domain.AssignmentGradeRepository;
+import com.cst438.domain.AssignmentListDTO.AssignmentDTO;
 import com.cst438.domain.AssignmentRepository;
 import com.cst438.domain.Course;
 import com.cst438.domain.CourseRepository;
@@ -242,6 +245,38 @@ public class JunitTestGradebook {
 		updatedag.setScore("88");
 		verify(assignmentGradeRepository, times(1)).save(updatedag);
 	}
+	
+	@Test
+    public void addAssignment()  throws Exception {
+        Course c = new Course();  
+        c.setCourse_id(TEST_COURSE_ID);
+        c.setInstructor(TEST_INSTRUCTOR_EMAIL);
+
+        Assignment a = new Assignment();
+        a.setId(1);
+        a.setCourse(c);
+        a.setName("test assignment");
+		a.setDueDate(new java.sql.Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000));
+
+     
+        given(courseRepository.findById(TEST_COURSE_ID)).willReturn(Optional.of(c));
+        given(assignmentRepository.save(any())).willReturn(a); 
+        
+        AssignmentDTO adto = new AssignmentDTO(1, TEST_COURSE_ID, "test", "2022-10-10", "test");
+        
+        MockHttpServletResponse response = mvc
+				.perform(MockMvcRequestBuilders.put("/gradebook/1").accept(MediaType.APPLICATION_JSON)
+						.content(asJsonString(adto)).contentType(MediaType.APPLICATION_JSON))
+				.andReturn().getResponse();
+                
+        assertEquals(200, response.getStatus());
+        // verify that returned data has non zero primary key
+        AssignmentDTO result = fromJsonString(response.getContentAsString(), AssignmentDTO.class);
+        // check that valid, non-zero primary id has been returned.
+        assertNotEquals( 0, result.assignmentId);
+        // verify that repository save method was called.
+        verify(assignmentRepository, times(1)).save(any());
+}
 	
 	private static String asJsonString(final Object obj) {
 		try {
