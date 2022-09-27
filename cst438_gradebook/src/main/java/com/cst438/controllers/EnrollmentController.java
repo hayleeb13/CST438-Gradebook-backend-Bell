@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.cst438.domain.Assignment;
 import com.cst438.domain.Course;
 import com.cst438.domain.CourseRepository;
 import com.cst438.domain.Enrollment;
@@ -31,9 +32,18 @@ public class EnrollmentController {
 	@Transactional
 	public EnrollmentDTO addEnrollment(@RequestBody EnrollmentDTO enrollmentDTO) {
 		
-		//TODO  complete this method in homework 4
+		Enrollment enrollment = new Enrollment();
+		enrollment.setStudentEmail(enrollmentDTO.studentEmail);
+		enrollment.setStudentName(enrollmentDTO.studentName);
+		Course course = courseRepository.findById(enrollmentDTO.course_id).orElse(null);
+		if(course==null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Course id not found");
+		}
+		enrollment.setCourse(course);
+		enrollment = enrollmentRepository.save(enrollment);
+		enrollmentDTO.id = enrollment.getId();
 		
-		return null;
+		return enrollmentDTO;
 		
 	}
 

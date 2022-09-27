@@ -1,6 +1,7 @@
 package com.cst438;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import static org.mockito.BDDMockito.given;
@@ -23,6 +25,7 @@ import com.cst438.controllers.GradeBookController;
 import com.cst438.domain.Assignment;
 import com.cst438.domain.AssignmentGrade;
 import com.cst438.domain.AssignmentGradeRepository;
+import com.cst438.domain.AssignmentListDTO.AssignmentDTO;
 import com.cst438.domain.AssignmentRepository;
 import com.cst438.domain.Course;
 import com.cst438.domain.CourseRepository;
@@ -242,174 +245,38 @@ public class JunitTestGradebook {
 		updatedag.setScore("88");
 		verify(assignmentGradeRepository, times(1)).save(updatedag);
 	}
-
+	
 	@Test
-	public void updateAssignment() throws Exception {
+    public void addAssignment()  throws Exception {
+        Course c = new Course();  
+        c.setCourse_id(TEST_COURSE_ID);
+        c.setInstructor(TEST_INSTRUCTOR_EMAIL);
 
-		MockHttpServletResponse response;
+        Assignment a = new Assignment();
+        a.setId(1);
+        a.setCourse(c);
+        a.setName("test assignment");
+		a.setDueDate(new java.sql.Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000));
 
-		Course course = new Course();
-		course.setCourse_id(TEST_COURSE_ID);
-		course.setSemester(TEST_SEMESTER);
-		course.setYear(TEST_YEAR);
-		course.setInstructor(TEST_INSTRUCTOR_EMAIL);
-		course.setEnrollments(new java.util.ArrayList<Enrollment>());
-		course.setAssignments(new java.util.ArrayList<Assignment>());
-
-		Enrollment enrollment = new Enrollment();
-		enrollment.setCourse(course);
-		course.getEnrollments().add(enrollment);
-		enrollment.setId(TEST_COURSE_ID);
-		enrollment.setStudentEmail(TEST_STUDENT_EMAIL);
-		enrollment.setStudentName(TEST_STUDENT_NAME);
-
-		Assignment assignment = new Assignment();
-		assignment.setCourse(course);
-		course.getAssignments().add(assignment);
-		assignment.setDueDate(new java.sql.Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000));
-		assignment.setId(1);
-		assignment.setName("Assignment 1");
-		assignment.setNeedsGrading(1);
-
-		AssignmentGrade ag = new AssignmentGrade();
-		ag.setAssignment(assignment);
-		ag.setId(1);
-		ag.setScore("80");
-		ag.setStudentEnrollment(enrollment);
-
-		given(assignmentRepository.findById(1)).willReturn(Optional.of(assignment));
-		given(assignmentGradeRepository.findByAssignmentIdAndStudentEmail(1, TEST_STUDENT_EMAIL)).willReturn(ag);
-		given(assignmentGradeRepository.findById(1)).willReturn(Optional.of(ag));
-
-		response = mvc.perform(MockMvcRequestBuilders.get("/gradebook/1").accept(MediaType.APPLICATION_JSON))
-				.andReturn().getResponse();
-
-		assertEquals(200, response.getStatus());
-
-		verify(assignmentGradeRepository, times(0)).save(any());
-
-		GradebookDTO result = fromJsonString(response.getContentAsString(), GradebookDTO.class);
-		assertEquals(1, result.assignmentId);
-		assertEquals(1, result.grades.size());
-		assertEquals(TEST_STUDENT_NAME, result.grades.get(0).name);
-		assertEquals("80", result.grades.get(0).grade);
-
-		// send updates to server
-		response = mvc
+     
+        given(courseRepository.findById(TEST_COURSE_ID)).willReturn(Optional.of(c));
+        given(assignmentRepository.save(any())).willReturn(a); 
+        
+        AssignmentDTO adto = new AssignmentDTO(1, TEST_COURSE_ID, "test", "2022-10-10", "test");
+        
+        MockHttpServletResponse response = mvc
 				.perform(MockMvcRequestBuilders.put("/gradebook/1").accept(MediaType.APPLICATION_JSON)
-						.content(asJsonString(result)).contentType(MediaType.APPLICATION_JSON))
+						.content(asJsonString(adto)).contentType(MediaType.APPLICATION_JSON))
 				.andReturn().getResponse();
-
-		// verify that return status = OK (value 200)
-		assertEquals(200, response.getStatus());
-
-		// verify that repository save method was called
-		// AssignmentGrade must override equals method for this test for work !!!
-		AssignmentGrade updatedag = new AssignmentGrade();
-		updatedag.setId(1);
-		updatedag.setScore("88");
-		verify(assignmentGradeRepository, times(1)).save(updatedag);
-	}
-	
-	@Test
-	public void addAssignment() throws Exception {
-
-		MockHttpServletResponse response;
-
-		Course course = new Course();
-		course.setCourse_id(TEST_COURSE_ID);
-		course.setSemester(TEST_SEMESTER);
-		course.setYear(TEST_YEAR);
-		course.setInstructor(TEST_INSTRUCTOR_EMAIL);
-		course.setEnrollments(new java.util.ArrayList<Enrollment>());
-		course.setAssignments(new java.util.ArrayList<Assignment>());
-
-		Enrollment enrollment = new Enrollment();
-		enrollment.setCourse(course);
-		course.getEnrollments().add(enrollment);
-		enrollment.setId(TEST_COURSE_ID);
-		enrollment.setStudentEmail(TEST_STUDENT_EMAIL);
-		enrollment.setStudentName(TEST_STUDENT_NAME);
-
-		Assignment assignment = new Assignment();
-		assignment.setCourse(course);
-		course.getAssignments().add(assignment);
-		assignment.setDueDate(new java.sql.Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000));
-		assignment.setId(1);
-		assignment.setName("Assignment 1");
-		assignment.setNeedsGrading(1);
-
-		AssignmentGrade ag = new AssignmentGrade();
-		ag.setAssignment(assignment);
-		ag.setId(1);
-		ag.setScore("80");
-		ag.setStudentEnrollment(enrollment);
-
-		given(assignmentRepository.findById(1)).willReturn(Optional.of(assignment));
-		given(assignmentGradeRepository.findByAssignmentIdAndStudentEmail(1, TEST_STUDENT_EMAIL)).willReturn(ag);
-		given(assignmentGradeRepository.findById(1)).willReturn(Optional.of(ag));
-
-		response = mvc.perform(MockMvcRequestBuilders.get("/gradebook/1").accept(MediaType.APPLICATION_JSON))
-				.andReturn().getResponse();
-
-		assertEquals(200, response.getStatus());
-
-		verify(assignmentGradeRepository, times(0)).save(any());
-
-		GradebookDTO result = fromJsonString(response.getContentAsString(), GradebookDTO.class);
-		assertEquals(1, result.assignmentId);
-		assertEquals(1, result.grades.size());
-		assertEquals(TEST_STUDENT_NAME, result.grades.get(0).name);
-		assertEquals("80", result.grades.get(0).grade);
-
-		// send updates to server
-		response = mvc
-				.perform(MockMvcRequestBuilders.put("/gradebook/1").accept(MediaType.APPLICATION_JSON)
-						.content(asJsonString(result)).contentType(MediaType.APPLICATION_JSON))
-				.andReturn().getResponse();
-
-		// verify that return status = OK (value 200)
-		assertEquals(200, response.getStatus());
-
-	}
-	
-	@Test
-	public void deleteAssignment()  throws Exception {
-		
-		MockHttpServletResponse response;
-		
-		Course course = new Course();
-		course.setCourse_id(TEST_COURSE_ID);
-		course.setCourse_id(TEST_COURSE_ID);
-		course.setSemester(TEST_SEMESTER);
-		course.setYear(TEST_YEAR);	
-		
-		Assignment assignment = new Assignment();
-		assignment.setCourse(course);
-		course.getAssignments().add(assignment);
-		assignment.setDueDate(new java.sql.Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000));
-		assignment.setId(1);
-		assignment.setName("Assignment 1");
-		assignment.setNeedsGrading(1);
-
-	
-		// given  -- stubs for database repositories that return test data
-	    given(assignmentRepository.findById(1)).willReturn(Optional.of(assignment));
-	    // note:  it is not necessary to create a mock for enrollmentRepository.delete.
-	    //   Because it is a method that has a void return type, Mockito will mock it automatically.
-	  
-		// then 
-		response = mvc.perform(
-				MockMvcRequestBuilders
-			      .delete("/schedule/1"))
-				.andReturn().getResponse();
-		
-		// verify that return status = OK (value 200) 
-		assertEquals(200, response.getStatus());
-	
-		// verify that repository delete method was called.
-		verify(assignmentRepository).delete(any(Assignment.class));
-	}
+                
+        assertEquals(200, response.getStatus());
+        // verify that returned data has non zero primary key
+        AssignmentDTO result = fromJsonString(response.getContentAsString(), AssignmentDTO.class);
+        // check that valid, non-zero primary id has been returned.
+        assertNotEquals( 0, result.assignmentId);
+        // verify that repository save method was called.
+        verify(assignmentRepository, times(1)).save(any());
+}
 	
 	private static String asJsonString(final Object obj) {
 		try {
